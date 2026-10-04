@@ -1,0 +1,22 @@
+# ---- File style Yamaha (.STY/.S801) TIDAK disertakan ----
+# Berisi konten ber-hak cipta (style built-in Yamaha / aransemen pihak lain).
+# Sediakan sendiri file style-nya di folder samples/ & perbaiki_style/templates/.
+*.STY
+*.sty
+*.S801
+samples/
+out/
+perbaiki_style/samples/
+perbaiki_style/in/
+perbaiki_style/out/
+perbaiki_style/templates/*.STY
+perbaiki_style/templates/*.S801
+
+# ---- Python / editor / OS ----
+__pycache__/
+*.py[cod]
+.venv/
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db

@@ -1,0 +1,16 @@
+[
+  { "id": "main_a",   "label": "Main A",    "section": "Main A",     "aliases": ["MainA", "Main 1"] },
+  { "id": "main_b",   "label": "Main B",    "section": "Main B",     "aliases": ["MainB", "Main 2"] },
+  { "id": "main_c",   "label": "Main C",    "section": "Main C",     "aliases": ["MainC", "Main 3"] },
+  { "id": "main_d",   "label": "Main D",    "section": "Main D",     "aliases": ["MainD", "Main 4"] },
+
+  { "id": "fill_a",   "label": "Fill In A", "section": "Fill In AA", "aliases": ["Fill In A", "FillIn A", "Fill In AB"] },
+  { "id": "fill_b",   "label": "Fill In B", "section": "Fill In BB", "aliases": ["Fill In B", "FillIn B", "Fill In BC"] },
+  { "id": "fill_c",   "label": "Fill In C", "section": "Fill In CC", "aliases": ["Fill In C", "FillIn C", "Fill In CD"] },
+  { "id": "fill_d",   "label": "Fill In D", "section": "Fill In DD", "aliases": ["Fill In D", "FillIn D"] },
+
+  { "id": "break",    "label": "Break",     "section": "Break",      "aliases": ["Fill In BA", "Break Fill In"] },
+
+  { "id": "ending_2", "label": "Ending 2",  "section": "Ending B",   "aliases": ["Ending 2", "EndingB", "Ending II"] },
+  { "id": "ending_3", "label": "Ending 3",  "section": "Ending C",   "aliases": ["Ending 3", "EndingC", "Ending III"] }
+]

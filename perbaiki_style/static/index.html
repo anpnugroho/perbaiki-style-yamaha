@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Perbaiki Style — Yamaha PSR</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <div class="title">🎹 Perbaiki Style</div>
+      <div class="muted small">Yamaha PSR · Main A–D · Fill In A–D · Break · Ending 2 · Ending 3</div>
+    </div>
+    <span id="tpl-badge" class="badge">template: —</span>
+  </header>
+
+  <main class="wrap">
+    <section class="panel">
+      <h2>1. Pilih style yang mau diperbaiki</h2>
+      <label class="drop" id="drop">
+        <input id="style-file" type="file" accept=".sty,.STY,.prs,.PRS,.bcs,.BCS,.mid,.MID" hidden />
+        <span class="drop-icon">📂</span>
+        <span id="style-name">Klik / tarik file <b>.STY</b> ke sini</span>
+      </label>
+
+      <details class="tpl-box" open>
+        <summary>Template</summary>
+        <div id="tpl-current" class="muted small"></div>
+        <label class="tpl-label" id="tpl-select-wrap" hidden>
+          <span class="muted small">Template utama</span>
+          <select id="tpl-select"></select>
+        </label>
+        <label class="drop small-drop">
+          <input id="tpl-file" type="file" accept=".sty,.STY,.prs,.PRS,.mid,.MID" hidden />
+          <span id="tpl-name">…atau unggah template lain (hanya untuk proses ini)</span>
+        </label>
+      </details>
+    </section>
+
+    <section class="panel" id="parts-panel" hidden>
+      <h2>2. Part yang akan dibuat sesuai template</h2>
+      <div class="row-between">
+        <label class="muted small"><input type="checkbox" id="check-all" checked /> pilih semua</label>
+        <label class="muted small"><input type="checkbox" id="fix-ie" /> rapikan Intro 1–3 &amp; Ending 1 (bass/rhythm)</label>
+        <label class="muted small">Panjang part:
+          <select id="mode">
+            <option value="grow" selected>utuh seperti template</option>
+            <option value="fit">potong ikut style</option>
+          </select>
+        </label>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Part</th><th>Section</th><th>Sumber part</th><th class="num">Bar</th><th class="num">Note</th><th>Status</th></tr>
+          </thead>
+          <tbody id="parts"></tbody>
+        </table>
+      </div>
+      <button id="go" class="primary">Perbaiki Style</button>
+      <p class="muted small">Hasil disimpan dengan <b>nama yang sama seperti file aslinya</b> (tanpa tambahan tanggal), jadi bisa langsung dipakai. Salinan arsip otomatis disimpan di folder <code>out/arsip</code>.</p>
+      <p id="msg" class="msg" role="alert" aria-live="polite"></p>
+    </section>
+
+    <section class="panel" id="report-panel" hidden>
+      <h2>3. Hasil</h2>
+      <div id="report"></div>
+    </section>
+  </main>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
