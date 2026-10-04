@@ -275,12 +275,13 @@ def repair(style_bytes, template_bytes, part_ids=None, mode="fit", overrides=Non
         if row["truncated"]:
             added = _close_hanging_notes(added, t_sec["end"])
 
-        # Donor khusus part Bass: ambil KIT (CC0/CC32/PC) + FILTER (CC71/CC74) + EQ (XG 72/73)
-        # dari donor lain. Not/garis bass tetap dari donor utama.
+        # Donor khusus part Bass: ganti SELURUH part bass (garis/not + kit + filter + EQ)
+        # dengan milik donor lain, dipotong sepanjang section.
         if (bass_overrides or {}).get(p["id"]):
             b_style = get_donor(bass_overrides[p["id"]])
-            added, bch = _override_bass_setup(added, donor_parts, remap, row["casm"],
-                                              b_style, find_section(b_style, p), t_sec["start"])
+            added, bch = _override_bass_part(added, donor_parts, remap, row["casm"],
+                                             b_style, find_section(b_style, p),
+                                             t_sec["start"], t_sec["end"])
             if bch is not None:
                 row["bass_from"] = load_bass_sources().get(p["id"], "?")
 
@@ -358,32 +359,9 @@ def _xg_part(channel, addr_low, value):
     return bytes([0xF0, 0x08, 0x43, 0x10, 0x4C, 0x08, channel, addr_low, value, 0xF7])
 
 
-_BASS_SETUP_ORDER = [("cc", 0), ("cc", 32), ("pc",), ("cc", 71), ("cc", 74), ("sx", 0x73), ("sx", 0x72)]
-
-
-def _bass_setup_events(style, section, channel):
-    """Setup part bass di section/channel: kit CC0/CC32/PC + filter CC71/CC74 + EQ XG 72/73."""
-    found = {}
-    for t, raw in style.events:
-        if not (section["start"] <= t < section["end"]):
-            continue
-        b = bytes(raw)
-        if b[0] == 0xF0:
-            if len(b) >= 10 and b[2:5] == b"\x43\x10\x4c" and b[6] == channel and b[7] in (0x72, 0x73):
-                found.setdefault(("sx", b[7]), b)
-            continue
-        if b[0] >= 0xF0 or (b[0] & 0x0F) != channel:
-            continue
-        kind = b[0] & 0xF0
-        if kind == 0xB0 and b[1] in (0, 32, 71, 74):
-            found.setdefault(("cc", b[1]), b)
-        elif kind == 0xC0:
-            found.setdefault(("pc",), b)
-    return found
-
-
-def _override_bass_setup(added, donor_parts, remap, casm_mode, bass_style, bass_section, start):
-    """Ganti setup part bass di `added` dengan milik donor lain. -> (added, channel|None)"""
+def _override_bass_part(added, donor_parts, remap, casm_mode, bass_style, bass_section, start, end):
+    """Ganti SELURUH part bass (garis/not + kit + filter + EQ) di `added` dengan milik
+    donor lain, dipotong sepanjang section. -> (added, channel|None)"""
     if bass_section is None:
         return added, None
     pairs = donor_parts if casm_mode == "template" else [(nm, remap.get(ch, ch)) for nm, ch in donor_parts]
@@ -393,33 +371,33 @@ def _override_bass_setup(added, donor_parts, remap, casm_mode, bass_style, bass_
     sch = next((ch for ch, nm in _casm_parts_all(bass_style).get(bass_section["name"], []) if nm == "Bass"), None)
     if sch is None:
         return added, None
-    want = _bass_setup_events(bass_style, bass_section, sch)
-    new = []
-    for key in _BASS_SETUP_ORDER:
-        raw = want.get(key)
-        if raw is None:
-            continue
-        if key[0] == "sx":
-            new.append(_xg_part(fch, key[1], raw[8]))
-        elif key[0] == "pc":
-            new.append(bytes([0xC0 | fch, raw[1]]))
-        else:
-            new.append(bytes([0xB0 | fch, key[1], raw[2]]))
-    if not new:
-        return added, None
 
-    def is_bass_setup(raw):
+    src = []
+    for t, raw in bass_style.events:
+        if not (bass_section["start"] <= t < bass_section["end"]):
+            continue
         b = bytes(raw)
         if b[0] == 0xF0:
-            return len(b) >= 10 and b[2:5] == b"\x43\x10\x4c" and b[6] == fch and b[7] in (0x72, 0x73)
-        if b[0] >= 0xF0 or (b[0] & 0x0F) != fch:
-            return False
-        kind = b[0] & 0xF0
-        return (kind == 0xB0 and b[1] in (0, 32, 71, 74)) or kind == 0xC0
+            if len(b) >= 10 and b[2:5] == b"\x43\x10\x4c" and b[6] == sch:
+                src.append((t - bass_section["start"], b[:6] + bytes([fch]) + b[7:]))
+            continue
+        if b[0] >= 0xF0 or (b[0] & 0x0F) != sch:
+            continue
+        src.append((t - bass_section["start"], bytes([(b[0] & 0xF0) | fch]) + b[1:]))
+    if not src:
+        return added, None
 
-    out = [(start, raw) for raw in new]
-    out += [(t, raw) for t, raw in added if not is_bass_setup(raw)]
-    return out, fch
+    span = end - start
+    part = [(start + rel, raw) for rel, raw in sorted(src, key=lambda e: e[0]) if rel < span]
+    part = _close_hanging_notes(part, end)
+
+    def is_bass(raw):
+        b = bytes(raw)
+        if b[0] == 0xF0:
+            return len(b) >= 10 and b[2:5] == b"\x43\x10\x4c" and b[6] == fch
+        return b[0] < 0xF0 and (b[0] & 0x0F) == fch
+
+    return part + [(t, raw) for t, raw in added if not is_bass(raw)], fch
 
 
 def _first_voice(style, section, channel):

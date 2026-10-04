@@ -177,5 +177,6 @@ dari **NEGORO**:
 }
 ```
 
-Yang diambil dari donor bass: **kit (CC0/CC32/PC)** + **filter (CC71/CC74)** + **EQ (XG 8-x-72/73)**.
-Not/garis bass tetap dari donor utama (`file`).
+Yang diambil dari donor bass: **seluruh part Bass** — garis/not bass + kit (CC0/CC32/PC) + filter
+(CC71/CC74) + EQ (XG 8-x-72/73). Kalau garis bass donor lebih panjang dari section, otomatis
+**dipotong** sepanjang section (nada yang terpotong ditutup rapi).
