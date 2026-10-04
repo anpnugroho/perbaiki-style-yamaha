@@ -20,3 +20,7 @@ __pycache__/
 .vscode/
 .DS_Store
 Thumbs.db
+
+# backup lokal
+*.bak
+*.bak-*
