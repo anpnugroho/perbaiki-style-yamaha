@@ -1,5 +1,8 @@
 {
   "main_d": "NEGORO84M3_4NGIN_D_V23.STY",
   "fill_d": "NEGORO84M3_4NGIN_D_V23.STY",
-  "ending_2": "NEGORO84M3_4NGIN_D_V23.STY"
+  "ending_2": {
+    "file": "NEGORO84M3_4NGIN_D_V23.STY",
+    "bass": "Template V23.STY"
+  }
 }

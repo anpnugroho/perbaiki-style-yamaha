@@ -162,3 +162,20 @@ yang terisi). Versi awal fitur cuma mengenali part lewat namanya, jadi bass di s
 terlewat. Sekarang tool membaca **semua** record CASM (termasuk yang kosong) dan menyimpulkan
 part-nya dari **channel referensi** (Bass = channel Bass Main A, dst), dengan pengaman: channel
 yang sudah dipakai part lain yang bernama tidak disentuh.
+
+#### Donor khusus part Bass (4/10/2026)
+
+`perbaiki_style/templates/sources.json` sekarang bisa menunjuk donor berbeda untuk **part Bass**
+saja — jadi mis. **Ending 2** bisa ambil bass dari **Template V23** sementara part lain tetap
+dari **NEGORO**:
+
+```json
+{
+  "main_d": "NEGORO84M3_4NGIN_D_V23.STY",
+  "fill_d": "NEGORO84M3_4NGIN_D_V23.STY",
+  "ending_2": { "file": "NEGORO84M3_4NGIN_D_V23.STY", "bass": "Template V23.STY" }
+}
+```
+
+Yang diambil dari donor bass: **kit (CC0/CC32/PC)** + **filter (CC71/CC74)** + **EQ (XG 8-x-72/73)**.
+Not/garis bass tetap dari donor utama (`file`).
