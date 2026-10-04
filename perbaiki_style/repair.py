@@ -344,6 +344,52 @@ def _first_voice(style, section, channel):
     return msb, lsb, pc
 
 
+def _name_candidates(name):
+    """Part yang mungkin untuk nama record yang tidak standar ('' / 'Rhytm' / 'Rhy1')."""
+    if not name:
+        return set(VOICE_PARTS)
+    if name.lower().startswith("rhy"):
+        return {"Rhythm1", "Rhythm2"}
+    return set()
+
+
+def _part_ok(style, section, channel, part, want):
+    """True kalau setelan part di section sudah persis sesuai target (tidak perlu diubah)."""
+    if None in want:
+        return False
+    if tuple(_first_voice(style, section, channel)) != tuple(want):
+        return False
+    n_msb = n_pc = 0
+    ccs = {}
+    sx = {}
+    for t, raw in style.events:
+        if not (section["start"] <= t < section["end"]):
+            continue
+        if raw[0] == 0xF0:
+            b = bytes(raw)
+            if len(b) >= 10 and b[2:5] == b"\x43\x10\x4c" and b[6] == channel:
+                sx["%02x" % b[7]] = b[8]
+            continue
+        if (raw[0] & 0x0F) != channel:
+            continue
+        kind = raw[0] & 0xF0
+        if kind == 0xB0:
+            if raw[1] == 0:
+                n_msb += 1
+            elif raw[1] in BASS_CC_SET:
+                ccs[raw[1]] = raw[2]
+        elif kind == 0xC0:
+            n_pc += 1
+    if n_msb != 1 or n_pc != 1:
+        return False
+    if part == "Bass":
+        if any(ccs.get(cc) != val for cc, val in BASS_CC_SET.items()):
+            return False
+        if any(sx.get("%02x" % a) != val for a, val in BASS_XG_SET.items()):
+            return False
+    return True
+
+
 def _casm_parts_all(style):
     """{section: [(channel, nama_part|None), ...]} — termasuk record yang namanya KOSONG.
 
@@ -387,9 +433,22 @@ def fix_intro_ending(style_bytes, section_names=None, logger=None):
             ref_ch[part] = rch
             ref[part] = _first_voice(tgt, rsec, rch)
 
-    # 2) Channel target per section. Kalau part tidak bernama (record kosong) tapi
-    #    ada record kosong di channel referensi part itu -> dianggap part tsb
-    #    (kasus bass di Intro/Ending yang belum diberi nama di CASM).
+    # Peta channel -> part dari record yang namanya dikenali. Dipakai kalau nama
+    # record tidak standar (mis. "Rhytm") atau kosong. Hanya dipakai kalau suaranya bulat.
+    votes = {}
+    for _sn, recs in allparts.items():
+        for ch, nm in recs:
+            if nm in VOICE_PARTS:
+                votes.setdefault(ch, {})
+                votes[ch][nm] = votes[ch].get(nm, 0) + 1
+    chan_part = {}
+    for ch, v in votes.items():
+        best = sorted(v.items(), key=lambda kv: -kv[1])
+        if len(best) == 1 or best[0][1] > best[1][1]:
+            chan_part[ch] = best[0][0]
+
+    # 2) Channel target per section. Part tanpa nama standar disimpulkan dari channel
+    #    (dari section lain di style yang sama), fallback ke channel referensi part itu.
     active = {}
     targets = {}
     rows = []
@@ -399,24 +458,35 @@ def fix_intro_ending(style_bytes, section_names=None, logger=None):
             rows.append({"section": sn, "status": "section tidak ada"})
             continue
         named = {}
+        unknown = []
         blank = set()
         for ch, nm in allparts.get(sn, []):
-            if nm:
+            if nm in VOICE_PARTS:
                 named.setdefault(nm, []).append(ch)
             else:
-                blank.add(ch)
+                unknown.append((ch, nm))
+                if not nm:
+                    blank.add(ch)
         row = {"section": sn, "parts": []}
         tgt_ch = {}
         for part in VOICE_PARTS:
             chans = list(named.get(part, []))
+            if not chans:
+                # Nama tidak standar/kosong: hanya percaya kalau channel itu memang
+                # milik part tsb di section lain (dan namanya masih masuk akal).
+                chans = [ch for ch, nm in unknown
+                         if part in _name_candidates(nm) and chan_part.get(ch) == part]
             if not chans and part in ref_ch and ref_ch[part] in blank:
                 chans = [ref_ch[part]]
             if not chans or part not in ref:
                 row["parts"].append({"part": part, "status": "part tidak ada" if not chans else "referensi tidak ada"})
                 continue
-            tgt_ch[part] = chans
+            todo = [ch for ch in chans if not _part_ok(tgt, sec, ch, part, ref[part])]
+            if todo:
+                tgt_ch[part] = todo
             old = _first_voice(tgt, sec, chans[0])
-            row["parts"].append({"part": part, "channel": chans[0], "old": list(old), "new": list(ref[part])})
+            row["parts"].append({"part": part, "channel": chans[0], "old": list(old),
+                                 "new": list(ref[part]), "ok": not todo})
         rows.append(row)
         if tgt_ch:
             targets[sn] = tgt_ch
