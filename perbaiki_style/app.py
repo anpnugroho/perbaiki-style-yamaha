@@ -205,18 +205,8 @@ class Handler(BaseHTTPRequestHandler):
                 with open(path, "rb") as fh:
                     overrides[p["id"]] = fh.read()
 
-        # Donor khusus part Bass (kit/filter/EQ diambil dari file lain).
-        bass_overrides = {}
-        for pid, fname in repair.load_bass_sources().items():
-            if part_ids and pid not in part_ids:
-                continue
-            path = os.path.join(repair.TEMPLATES_DIR, fname)
-            if os.path.isfile(path):
-                with open(path, "rb") as fh:
-                    bass_overrides[pid] = fh.read()
-
         try:
-            result, report = repair.repair(blob, tpl_blob, part_ids, mode, overrides, bass_overrides)
+            result, report = repair.repair(blob, tpl_blob, part_ids, mode, overrides)
         except Exception as exc:
             return self._json(400, {"error": f"gagal memperbaiki style: {exc}"})
 
